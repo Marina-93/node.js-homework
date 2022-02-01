@@ -6,8 +6,8 @@
 
 const mongoose = require('mongoose');
 
-const DB_HOST =
-  'mongodb+srv://mari:mongodb06@cluster0.49um5.mongodb.net/db-contacts?retryWrites=true&w=majority';
+const {DB_HOST} = process.env
+  
 mongoose.connect(DB_HOST)
   .then(() => console.log('Database connection successful'))
   .catch((error) => console.log(error.message));
