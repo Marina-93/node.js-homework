@@ -1,5 +1,6 @@
 const express = require('express');
 const createError = require('http-errors');
+const mongoose = require('mongoose');
 
 const { Contact, schema } = require('../../models/contact');
 
@@ -17,15 +18,15 @@ router.get('/', async (req, res, next) => {
 router.get('/:contactId', async (req, res, next) => {
   try {
     const { contactId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(contactId)) {
+      throw new createError(404, 'Id not valid');
+    }
     const result = await Contact.findById(contactId);
     if (!result) {
       throw new createError(404, 'Not found');
     }
     res.json(result);
   } catch (error) {
-    if (error.message.includes('Cast to ObjectId faild')) {
-      error.status = 404;
-    }
     next(error);
   }
 });
@@ -39,9 +40,6 @@ router.post('/', async (req, res, next) => {
     const result = await Contact.create(req.body);
     res.status(201).json(result);
   } catch (error) {
-    if (error.message.includes('validation failed')) {
-      error.status = 400;
-    }
     next(error);
   }
 });
@@ -49,6 +47,9 @@ router.post('/', async (req, res, next) => {
 router.delete('/:contactId', async (req, res, next) => {
   try {
     const { contactId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(contactId)) {
+      throw new createError(404, 'Id not valid');
+    }
     const result = await Contact.findByIdAndDelete(contactId);
     if (!result) {
       throw new createError(404, 'Not found');
@@ -66,6 +67,9 @@ router.put('/:contactId', async (req, res, next) => {
       throw new createError(400, 'Missing fields');
     }
     const { contactId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(contactId)) {
+      throw new createError(404, 'Id not valid');
+    }
     const result = await Contact.findByIdAndUpdate(contactId, req.body, { new: true });
     if (!result) {
       throw new createError(404, 'Not found');
@@ -83,6 +87,9 @@ router.patch('/:contactId/favorite', async (req, res, next) => {
       throw new createError(400, 'Missing field favorite');
     }
     const { contactId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(contactId)) {
+      throw new createError(404, 'Id not valid');
+    }
     const result = await Contact.findByIdAndUpdate(contactId, req.body, { new: true });
     if (!result) {
       throw new createError(404, 'Not found');
