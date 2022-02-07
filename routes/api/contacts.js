@@ -3,12 +3,16 @@ const createError = require('http-errors');
 const mongoose = require('mongoose');
 
 const { Contact, schema } = require('../../models/contact');
+const { authenticate } = require('../../middlewares');
 
 const router = express.Router();
 
-router.get('/', async (req, res, next) => {
+router.get('/', authenticate, async (req, res, next) => {
   try {
-    const result = await Contact.find();
+    const { page = 1, limit = 20 } = req.query;
+    const { _id } = req.user;
+    const skip = (page - 1) * limit;
+    const result = await Contact.find({ owner: _id }, { skip, limit: +limit }).populate('owner', 'email');
     res.json(result);
   } catch (error) {
     next(error);
@@ -31,13 +35,14 @@ router.get('/:contactId', async (req, res, next) => {
   }
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/',authenticate, async (req, res, next) => {
   try {
     const { error } = schema.add.validate(req.body);
     if (error) {
       throw new createError(400, 'Missing required name field');
     }
-    const result = await Contact.create(req.body);
+    const data = { ...req.body, owner: req.user._id}
+    const result = await Contact.create(data);
     res.status(201).json(result);
   } catch (error) {
     next(error);

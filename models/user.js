@@ -20,10 +20,6 @@ const userSchema = Schema({
     type: String,
     default: null,
   },
-  owner: {
-    type: Schema.Types.ObjectId,
-    ref: 'user',
-  },
 }, { versionKey: false });
 
 const usersRegisterValidation = Joi.object({
@@ -43,5 +39,4 @@ module.exports = {
   schems: {
     registet: usersRegisterValidation
   }
-
 };
