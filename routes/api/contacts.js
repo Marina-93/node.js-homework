@@ -33,7 +33,7 @@ router.get('/:contactId', authenticate, async (req, res, next) => {
     }
     const result = await Contact.findById({
       _id: ObjectId(contactId),
-      owner: req.user.id,
+      owner: req.user._id,
     });
     if (!result) {
       throw new createError(404, 'Not found');
@@ -65,7 +65,7 @@ router.delete('/:contactId', authenticate, async (req, res, next) => {
       throw new createError(404, 'Id not valid');
     }
     const result = await Contact.findByIdAndDelete(
-      { _id: ObjectId(contactId), owner: req.user.id }
+      { _id: ObjectId(contactId), owner: req.user._id }
     );
     if (!result) {
       throw new createError(404, 'Not found');
@@ -87,7 +87,7 @@ router.put('/:contactId', authenticate, async (req, res, next) => {
       throw new createError(404, 'Id not valid');
     }
     const result = await Contact.findByIdAndUpdate(
-      { _id: ObjectId(contactId), owner: req.user.id },
+      { _id: ObjectId(contactId), owner: req.user._id },
       req.body,
       { new: true }
     );
@@ -111,7 +111,7 @@ router.patch('/:contactId/favorite', async (req, res, next) => {
       throw new createError(404, 'Id not valid');
     }
     const result = await Contact.findByIdAndUpdate(
-      { _id: ObjectId(contactId), owner: req.user.id },
+      { _id: ObjectId(contactId), owner: req.user._id },
       req.body,
       { new: true }
     );
