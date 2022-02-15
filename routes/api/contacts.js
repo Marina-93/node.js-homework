@@ -1,6 +1,7 @@
 const express = require('express');
 const createError = require('http-errors');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 
 const { Contact, schema } = require('../../models/contact');
 const { authenticate } = require('../../middlewares');
@@ -28,11 +29,15 @@ router.get('/:contactId', async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(contactId)) {
       throw new createError(404, 'Id not valid');
     }
-    const result = await Contact.findById(contactId);
-    if (!result) {
+    const { authorization = '' } = req.headers;
+    const [bearer, token] = authorization.split(' ');
+    const decodeToken = jwt.decode(token);
+    const result = await Contact.findById(contactId).populate('owner', 'email');
+    if (decodeToken.id === String(result.owner._id)) {
+      res.json(result);
+    } else if (!decodeToken.id === String(result.owner._id) || !result) {
       throw new createError(404, 'Not found');
     }
-    res.json(result);
   } catch (error) {
     next(error);
   }
@@ -52,17 +57,21 @@ router.post('/', authenticate, async (req, res, next) => {
   }
 });
 
-router.delete('/:contactId', async (req, res, next) => {
+router.delete('/:contactId', authenticate, async (req, res, next) => {
   try {
     const { contactId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(contactId)) {
       throw new createError(404, 'Id not valid');
     }
-    const result = await Contact.findByIdAndDelete(contactId);
-    if (!result) {
+    const { authorization = '' } = req.headers;
+    const [bearer, token] = authorization.split(' ');
+    const decodeToken = jwt.decode(token);
+    if (decodeToken.id === String(result.owner._id)) {
+      await Contact.findByIdAndDelete(contactId);
+      res.json({ message: 'Contact deleted' });
+    } else if (!decodeToken.id === String(result.owner._id) || !result) {
       throw new createError(404, 'Not found');
     }
-    res.json({ message: 'Contact deleted' });
   } catch (error) {
     next(error);
   }
@@ -78,13 +87,17 @@ router.put('/:contactId', async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(contactId)) {
       throw new createError(404, 'Id not valid');
     }
-    const result = await Contact.findByIdAndUpdate(contactId, req.body, {
+    const { authorization = '' } = req.headers;
+    const [bearer, token] = authorization.split(' ');
+    const decodeToken = jwt.decode(token);
+    if (decodeToken.id === String(result.owner._id)) {
+      const result = await Contact.findByIdAndUpdate(contactId, req.body, {
       new: true,
-    });
-    if (!result) {
+      });
+      res.json(result);
+    } else if (!decodeToken.id === String(result.owner._id) || !result) {
       throw new createError(404, 'Not found');
     }
-    res.json(result);
   } catch (error) {
     next(error);
   }
@@ -100,13 +113,20 @@ router.patch('/:contactId/favorite', async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(contactId)) {
       throw new createError(404, 'Id not valid');
     }
-    const result = await Contact.findByIdAndUpdate(contactId, req.body, {
+    const { authorization = '' } = req.headers;
+    const [bearer, token] = authorization.split(' ');
+    const decodeToken = jwt.decode(token);
+    if (decodeToken.id === String(result.owner._id)) {
+      const result = await Contact.findByIdAndUpdate(contactId, req.body, {
       new: true,
     });
     if (!result) {
       throw new createError(404, 'Not found');
     }
     res.json(result);
+    } else if (!decodeToken.id === String(result.owner._id)) {
+      throw new createError(404, 'Not found');
+    }
   } catch (error) {
     next(error);
   }
