@@ -36,11 +36,16 @@ const usersRegisterValidation = Joi.object({
   subscription: Joi.string(),
 });
 
+const updateUserSubscription = Joi.object({
+  subscription: Joi.string().valid("starter", "pro", "business").required()
+});
+
 const User = model('user', userSchema);
 
 module.exports = {
   User,
   schems: {
     registet: usersRegisterValidation,
+    update: updateUserSubscription
   },
 };

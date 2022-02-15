@@ -54,9 +54,7 @@ router.post('/login', async (req, res, next) => {
     if (!compareResult) {
       throw new createError(401, 'Email or password is wrong');
     }
-    const payload = {
-      id: user._id,
-    };
+    const payload = { id: user._id };
     const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '5h' });
     await User.findByIdAndUpdate(user._id, { token });
     res.json({
@@ -73,10 +71,7 @@ router.post('/login', async (req, res, next) => {
 
 router.get('/current', authenticate, async (req, res, next) => {
   const { email, subscription } = req.user;
-  res.json({
-    email,
-    subscription,
-  });
+  res.json({ email, subscription });
 });
 
 router.get('/ logout', authenticate, async (req, res, next) => {
@@ -84,4 +79,19 @@ router.get('/ logout', authenticate, async (req, res, next) => {
   await User.findByIdAndUpdate(_id, { token: '' });
   res.status(204).send();
 });
+
+router.patch('/subscription', authenticate, async (req, res, next) => {
+  try {
+    const { error } = schems.update.validate(req.body);
+    if (error) {
+      throw new createError(400, 'Missing fields');
+    }
+    const { id, email, subscription } = req.body;
+    await User.findByIdAndUpdate(id, email, subscription, { new: true });
+    res.json({ email, subscription });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
