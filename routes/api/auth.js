@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const gravatar = require('gravatar');
 const path = require('path');
 const fs = require('fs/promises');
+const { v4 } = require('uuid');
 
 const { User, schems } = require('../../models/user');
 const { authenticate, upload } = require('../../middlewares');
@@ -12,6 +13,8 @@ const { authenticate, upload } = require('../../middlewares');
 const avatarsDir = path.join(__dirname, "../../", "public", "avatars");
 
 const router = express.Router();
+
+const { sendMail } = require('../../helpers/sendMail');
 
 const { SECRET_KEY } = process.env;
 
@@ -28,14 +31,20 @@ router.post('/signup', async (req, res, next) => {
     }
     const solt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, solt);
-    const avatarURL = gravatar.url(email, { protocol: 'http'});
+    const avatarURL = gravatar.url(email, { protocol: 'http' });
+    const verificationToken = v4();
     const result = await User.create({
       email,
       avatarURL,
+      verificationToken,
       password: hashPassword,
       subscription,
     });
-    // '<a href="">Нажмите для подтверждения</a>'
+    const mail = {
+      to: email,
+      subject: 'Подтверждение',
+      html: `<a target='_blank' href="http://localhost:3000/api/users/${verificationToken}">Нажмите для подтверждения</a>`
+    }
     res.status(201).json({
       user: {
         email,
