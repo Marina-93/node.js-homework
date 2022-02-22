@@ -28,13 +28,14 @@ router.post('/signup', async (req, res, next) => {
     }
     const solt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, solt);
-    const avatarURL = gravatar.url(email);
+    const avatarURL = gravatar.url(email, { protocol: 'http'});
     const result = await User.create({
       email,
       avatarURL,
       password: hashPassword,
       subscription,
     });
+    // '<a href="">Нажмите для подтверждения</a>'
     res.status(201).json({
       user: {
         email,
