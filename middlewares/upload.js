@@ -1,6 +1,6 @@
 const multer = require('multer');
 const path = require('path');
-var jimp = require('jimp');
+const jimp = require('jimp');
 
 const tempDir = path.join(__dirname, '../', 'tamp');
 
