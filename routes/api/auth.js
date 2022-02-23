@@ -6,6 +6,7 @@ const gravatar = require('gravatar');
 const path = require('path');
 const fs = require('fs/promises');
 const { v4 } = require('uuid');
+const Joi = require('joi');
 
 const { User, schems } = require('../../models/user');
 const { authenticate, upload } = require('../../middlewares');
@@ -14,7 +15,7 @@ const avatarsDir = path.join(__dirname, "../../", "public", "avatars");
 
 const router = express.Router();
 
-const { sendMail } = require('../../helpers/sendMail');
+const { sendMail } = require('../../helpers');
 
 const { SECRET_KEY } = process.env;
 
@@ -45,6 +46,7 @@ router.post('/signup', async (req, res, next) => {
       subject: 'Подтверждение',
       html: `<a target='_blank' href="http://localhost:3000/api/users/${verificationToken}">Нажмите для подтверждения</a>`
     }
+    await sendMail(mail);
     res.status(201).json({
       user: {
         email,
@@ -66,6 +68,9 @@ router.post('/login', async (req, res, next) => {
     const user = await User.findOne({ email });
     if (!user) {
       throw new createError(401, 'Email or password is wrong');
+    }
+    if (!user.verify) {
+      throw new createError(401, 'Not verify');
     }
     const compareResult = await bcrypt.compare(password, user.password);
     if (!compareResult) {
@@ -128,5 +133,46 @@ router.patch('/avatars', authenticate, upload.single('avatar'), async(req, res, 
         next(error);
     }
 });
+
+router.get('/verify/:verificationToken', authenticate, async (req, res, next) => {
+  const { verificationToken } = req.params;
+  try {
+    const user = await User.findOne({ verificationToken });
+    if (!user) {
+      throw new createError(404);
+    }
+    await User.findByIdAndUpdate(user._id, { verify: true, verificationToken: null });
+    res.json({
+      message: 'Verification successful'
+    })
+  } catch (error) {
+    next(error);
+  }
+})
+
+router.post('/verify', async (req, res, next) => {
+  try {
+    const { error } = schems.email.validate(req.body);
+    if (error) {
+      throw new createError(400, 'missing required field email');
+    };
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (user.verify) {
+      throw new createError(400, 'Verification hes already been passed');
+    }
+    const mail = {
+      to: email,
+      subject: 'Подтверждение',
+      html: `<a target='_blank' href="http://localhost:3000/api/users/${user.verificationToken}">Нажмите для подтверждения</a>`
+    }
+    await sendMail(mail);
+    res.json({
+      message: 'Verification email sent'
+    })
+  } catch (error) {
+    next(error);
+  }
+})
 
 module.exports = router;
