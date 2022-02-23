@@ -158,6 +158,9 @@ router.post('/verify', async (req, res, next) => {
     };
     const { email } = req.body;
     const user = await User.findOne({ email });
+    if (!user) {
+      throw new createError(404);
+    }
     if (user.verify) {
       throw new createError(400, 'Verification hes already been passed');
     }
